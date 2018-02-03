@@ -11,6 +11,7 @@
 int main(int ac, char **av)
 {
 	if (ac != 2) {
+		std::cout << av[0] << ": expression" << std::endl;
 		return (1);
 	}
 	Parser parser;

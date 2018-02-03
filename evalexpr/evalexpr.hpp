@@ -13,7 +13,7 @@
 
 template<typename F, typename S>
 struct ope_then {
-	std::pair<bool, std::string> operator()(std::string const &str)
+	std::pair<bool, std::string> operator()(std::string &str)
 	{
 		F f;
 		std::pair<bool, std::string> fp = f(str);
@@ -38,7 +38,7 @@ struct ope_char {
 
 template<typename T>
 struct ope_more {
-	std::pair<bool, std::string> operator()(std::string const &str)
+	std::pair<bool, std::string> operator()(std::string &str)
 	{
 		T t;
 		std::pair<bool, std::string> pair = t(str);
@@ -57,7 +57,7 @@ struct ope_more {
 
 template<typename T>
 struct ope_mul {
-	std::pair<bool, std::string> operator()(std::string const &str)
+	std::pair<bool, std::string> operator()(std::string &str)
 	{
 		std::pair<bool, std::string> pair{true, str};
 		while (1) {
@@ -73,7 +73,7 @@ struct ope_mul {
 
 template<typename F, typename S>
 struct ope_or {
-	std::pair<bool, std::string> operator()(std::string const &str)
+	std::pair<bool, std::string> operator()(std::string &str)
 	{
 		F f;
 		std::pair<bool, std::string> fp = f(str);
@@ -85,11 +85,15 @@ struct ope_or {
 	}
 };
 
-struct ope_num : ope_more<ope_or<ope_char<'0'>, ope_or<ope_char<'1'>,
+struct ope_digit : public ope_or<ope_char<'0'>, ope_or<ope_char<'1'>,
 		ope_or<ope_char<'2'>, ope_or<ope_char<'3'>,
 		ope_or<ope_char<'4'>, ope_or<ope_char<'5'>,
 		ope_or<ope_char<'6'>, ope_or<ope_char<'7'>,
-		ope_or<ope_char<'8'>, ope_char<'9'>>>>>>>>>>>
+		ope_or<ope_char<'8'>, ope_char<'9'>>>>>>>>>>
+{
+};
+
+struct ope_num : public ope_then<ope_mul<ope_char<' '>>, ope_more<ope_digit>>
 {
 };
 
@@ -105,16 +109,11 @@ struct Parser : public ope_low
 {
 	std::pair<bool, std::string> operator()(std::string const &str)
 	{
-		std::pair<bool, std::string> pair = ope_low::operator()(str);
+		std::string str2 = str;
+		std::pair<bool, std::string> pair = ope_low::operator()(str2);
 		if (pair.second.size() == 0) {
 			return pair;
 		}
 		return std::make_pair(false, str);
 	}
 };
-/*
-entry = ope_low;
-ope_low = ope_high , ( (’+’ | ’-’) , ope_high)*;
-ope_high = num , ((’*’ | ’/’ | ’\%’) , num)*;
-num = (’1’ | ’2’ | ’3’ | ’4’ | ’5’ | ’6’ | ’7’ | ’8’ | ’9’ | ’0’)+;
-*/
