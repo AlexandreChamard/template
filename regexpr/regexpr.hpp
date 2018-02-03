@@ -10,27 +10,58 @@
 #include <utility>
 #include <string>
 
-/* P_THEN */
+/* P_MORE */
 template<typename ...T>
-struct p_then;
+struct p_more;
 
 template<typename T, typename U>
-struct p_then<T, U>
+struct p_more<T, U>
 {
 	std::pair<bool, std::string> operator()(std::string &str)
 	{
 		T t;
-		std::pair<bool, std::string> res = t(str);
-		if (res.first == true) {
-			U u;
-			return u(res.second);
+		std::pair<bool, std::string> pair = t(str);
+		if (pair.first == true) {
+			while (1) {
+				std::pair<bool, std::string> pair2 = t(pair.second);
+				if (pair2.first == false) {
+					return pair;
+				}
+				pair = pair2;
+			}
 		}
-		return res;
+		return pair;
 	}
 };
 
 template<typename T, typename ...other>
-struct p_then<T, other...> : public p_then<T, p_then<other...>>
+struct p_more<T, other...> : public p_more<T, p_more<other...>>
+{
+};
+
+/* P_MUL */
+template<typename ...T>
+struct p_mul;
+
+template<typename T, typename U>
+struct p_mul<T, U>
+{
+	std::pair<bool, std::string> operator()(std::string &str)
+	{
+		std::pair<bool, std::string> pair{true, str};
+		while (1) {
+			T t;
+			std::pair<bool, std::string> pair2 = t(pair.second);
+			if (pair2.first == false) {
+				return std::make_pair(true, pair2.second);
+			}
+			pair = pair2;
+		}
+	}
+};
+
+template<typename T, typename ...other>
+struct p_mul<T, other...> : public p_mul<T, p_mul<other...>>
 {
 };
 
@@ -58,6 +89,30 @@ struct p_or<T, other...> : public p_or<T, p_or<other...>>
 {
 };
 
+/* P_THEN */
+template<typename ...T>
+struct p_then;
+
+template<typename T, typename U>
+struct p_then<T, U>
+{
+	std::pair<bool, std::string> operator()(std::string &str)
+	{
+		T t;
+		std::pair<bool, std::string> res = t(str);
+		if (res.first == true) {
+			U u;
+			return u(res.second);
+		}
+		return res;
+	}
+};
+
+template<typename T, typename ...other>
+struct p_then<T, other...> : public p_then<T, p_then<other...>>
+{
+};
+
 /* P_CHAR */
 template<char ...c>
 struct p_char;
@@ -79,6 +134,21 @@ struct p_char<c, cs...> : public p_or<p_char<c>, p_char<cs...>>
 {
 };
 
+/* P_EOF */
+struct p_eof
+{
+	std::pair<bool, std::string> operator()(std::string &str)
+	{
+		return std::make_pair(str.empty(), str);
+	}
+};
+
+/* P_EOL */
+struct p_eol : p_char<'\0', '\n'> {};
+
+/* P_SPACE */
+struct p_space : public p_mul<p_char<' ', '\t'>> {};
+
 //////////////////// OLD REGEXPR ////////////////////
 
 template<std::string const &S>
@@ -92,26 +162,6 @@ struct ope_string {
 	}
 };
 
-struct ope_blank {
-	std::pair<bool, std::string> operator()(std::string &str)
-	{
-		if (str.size() > 0 && std::isblank(str.at(0))) {
-			return std::make_pair(true, str.substr(1));
-		}
-		return std::make_pair(false, str);
-	}
-};
-
-struct ope_space {
-	std::pair<bool, std::string> operator()(std::string &str)
-	{
-		if (str.size() > 0 && std::isspace(str.at(0))) {
-			return std::make_pair(true, str.substr(1));
-		}
-		return std::make_pair(false, str);
-	}
-};
-
 struct ope_digit {
 	std::pair<bool, std::string> operator()(std::string &str)
 	{
@@ -119,54 +169,5 @@ struct ope_digit {
 			return std::make_pair(true, str.substr(1));
 		}
 		return std::make_pair(false, str);
-	}
-};
-
-template<typename T>
-struct ope_more {
-	std::pair<bool, std::string> operator()(std::string &str)
-	{
-		T t;
-		std::pair<bool, std::string> pair = t(str);
-		if (pair.first == true) {
-			while (1) {
-				std::pair<bool, std::string> pair2 = t(pair.second);
-				if (pair2.first == false) {
-					return pair;
-				}
-				pair = pair2;
-			}
-		}
-		return pair;
-	}
-};
-
-template<typename T>
-struct ope_mul {
-	std::pair<bool, std::string> operator()(std::string &str)
-	{
-		std::pair<bool, std::string> pair{true, str};
-		while (1) {
-			T t;
-			std::pair<bool, std::string> pair2 = t(pair.second);
-			if (pair2.first == false) {
-				return std::make_pair(true, pair2.second);
-			}
-			pair = pair2;
-		}
-	}
-};
-
-template<typename F, typename S>
-struct ope_or {
-	std::pair<bool, std::string> operator()(std::string &str)
-	{
-		F f;
-		std::pair<bool, std::string> fp = f(str);
-		if (fp.first == false) {
-			S s;
-			return s(str);
-		}
-		return fp;
 	}
 };
