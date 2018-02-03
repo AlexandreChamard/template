@@ -25,8 +25,6 @@ struct p_space;
 struct p_digit;
 
 /* P_MORE */
-template<typename ...T> struct p_more;
-
 template<typename T, typename U>
 struct p_more<T, U>
 {
@@ -52,8 +50,6 @@ template<typename T, typename ...other>
 struct p_more<T, other...> : public p_more<T, p_more<other...>> {};
 
 /* P_MUL */
-template<typename ...T> struct p_mul;
-
 template<typename T>
 struct p_mul<T>
 {
@@ -75,8 +71,6 @@ template<typename T, typename ...other>
 struct p_mul<T, other...> : public p_mul<T, p_mul<other...>> {};
 
 /* P_OR */
-template<typename ...T> struct p_or;
-
 template<typename T, typename U>
 struct p_or<T, U>
 {
@@ -96,8 +90,6 @@ template<typename T, typename ...other>
 struct p_or<T, other...> : public p_or<T, p_or<other...>> {};
 
 /* P_THEN */
-template<typename ...T> struct p_then;
-
 template<typename T, typename U>
 struct p_then<T, U>
 {
@@ -117,8 +109,6 @@ template<typename T, typename ...other>
 struct p_then<T, other...> : public p_then<T, p_then<other...>> {};
 
 /* P_CHAR */
-template<char ...c> struct p_char;
-
 template<char c>
 struct p_char<c>
 {
