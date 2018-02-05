@@ -6,23 +6,26 @@
 */
 
 #include <iostream>
+#include <queue>
 #include "../regexpr.hpp"
 
 bool is_digit(std::string const &str)
 {
-	p_char<'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'> digit;
+	p_digit digit;
 
 	return digit(str).first;
 }
 
-int main()
+int main(int ac, char **av)
 {
-	p_mul<p_apply<is_digit>> p;
-	std::stringstream sstr;
+	if (ac != 2) return (1);
+	p_token<p_trim<p_more<p_digit>>, p_or<p_char<','>, p_eof>> t;
 
-	std::string s("123");
-	auto r = p(s);
-	std::cout << "res: " << r.first << std::endl;
-	std::cout << "str: [" << r.second << "]" << std::endl;
+	std::string str = av[1];
+	auto r = t(str);
+	while (r.first == true) {
+		std::cout << "token: [" << r.second << "]" << std::endl;
+		r = t(str);
+	};
 	return 0;
 }

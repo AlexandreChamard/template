@@ -11,47 +11,50 @@
 #include <functional>
 #include <string>
 #include <sstream>
+#include <iostream>
 
 /* PARSERS */
-template<typename ...T> struct p_more;
-template<typename ...T> struct p_mul;
+template<typename T> struct p_more;
+template<typename T> struct p_mul;
 template<typename ...T> struct p_or;
 template<typename ...T> struct p_then;
 template<char ...c> struct p_char;
 template<bool (*T)(std::string const &)> struct p_apply;
+template<typename T> struct p_not;
+template<typename T, typename U> struct p_separate;
 struct p_eof;
 struct p_eol;
 struct p_space;
 struct p_digit;
+template<typename T> struct p_ltrim;
+template<typename T> struct p_rtrim;
+template<typename T> struct p_trim;
 
 /* P_MORE */
-template<typename T, typename U>
-struct p_more<T, U>
+template<typename T>
+struct p_more
 {
 	std::pair<bool, std::string> operator()(std::string str, std::stringstream *sstr = nullptr)
 	{
 		T t;
 		auto pair = t(str, sstr);
-		if (pair.first == true) {
-			str = pair.second;
-			while (1) {
-				pair = t(pair.second, sstr);
-				if (pair.first == false) {
-					return std::make_pair(true, str);
-				}
-				str = pair.second;
-			}
+		if (pair.first == false) {
+			return std::make_pair(false, str);
 		}
-		return std::make_pair(false, str);
+		str = pair.second;
+		while (1) {
+			pair = t(pair.second, sstr);
+			if (pair.first == false) {
+				return std::make_pair(true, str);
+			}
+			str = pair.second;
+		}
 	}
 };
 
-template<typename T, typename ...other>
-struct p_more<T, other...> : public p_more<T, p_more<other...>> {};
-
 /* P_MUL */
 template<typename T>
-struct p_mul<T>
+struct p_mul
 {
 	std::pair<bool, std::string> operator()(std::string str, std::stringstream *sstr = nullptr)
 	{
@@ -66,9 +69,6 @@ struct p_mul<T>
 		}
 	}
 };
-
-template<typename T, typename ...other>
-struct p_mul<T, other...> : public p_mul<T, p_mul<other...>> {};
 
 /* P_OR */
 template<typename T, typename U>
@@ -127,6 +127,22 @@ struct p_char<c>
 template<char c, char ...other>
 struct p_char<c, other...> : public p_or<p_char<c>, p_char<other...>> {};
 
+/* P_NOT */
+template<typename T>
+struct p_not
+{
+	std::pair<bool, std::string> operator()(std::string str, std::stringstream *sstr = nullptr)
+	{
+		T t;
+		auto tp = t(str);
+		return std::make_pair(!tp.first, tp.second);
+	}
+};
+
+/* P_SEPARATE */
+template<typename T, typename U>
+struct p_separate : public p_then<T, p_mul<p_then<U, T>>> {};
+
 /* P_EOF */
 struct p_eof
 {
@@ -138,10 +154,29 @@ struct p_eof
 };
 
 /* P_EOL */
-struct p_eol : p_char<'\0', '\n'> {};
+struct p_eol
+{
+	std::pair<bool, std::string> operator()(std::string str, std::stringstream *sstr = nullptr)
+	{
+		p_or<p_char<'\0', '\n'>, p_eof> eol;
+
+		(void) sstr;
+		return eol(str);
+	}
+};
 
 /* P_SPACE */
-struct p_space : public p_mul<p_char<' ', '\t'>> {};
+struct p_space
+{
+	std::pair<bool, std::string> operator()(std::string str, std::stringstream *sstr = nullptr)
+	{
+		p_char<' ', '\t'> space;
+
+		(void) sstr;
+		return space(str);
+	}
+};
+
 
 /* P_APPLY */
 template<bool (*T)(std::string const &)>
@@ -161,3 +196,31 @@ struct p_apply
 };
 
 struct p_digit : public p_char<'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'> {};
+
+/* P_TOKEN */
+template<typename T, typename U>
+struct p_token
+{
+	std::pair<bool, std::string> operator()(std::string &str)
+	{
+		std::stringstream sstr;
+
+		T t;
+		auto tp = t(str, &sstr);
+		U u;
+		auto up = u(tp.second);
+		if (up.first) {
+			str = up.second;
+		}
+		return std::make_pair(tp.first && up.first, sstr.str());
+	}
+};
+
+template<typename T>
+struct p_ltrim : public p_then<p_mul<p_space>, T>{};
+
+template<typename T>
+struct p_rtrim : public p_then<T, p_mul<p_space>>{};
+
+template<typename T>
+struct p_trim : public p_then<p_ltrim<T>, p_mul<p_space>>{};

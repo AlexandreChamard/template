@@ -124,7 +124,7 @@ static inline void tests_p_more()
 
 static inline void tests_p_space()
 {
-	p_then<p_more<p_char<'O'>>, p_space, p_char<'K'>, p_eof> t;
+	p_then<p_more<p_char<'O'>>, p_mul<p_space>, p_char<'K'>, p_eof> t;
 
 	std::string str1("OK");
 	std::string str2("O               K");
