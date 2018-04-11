@@ -140,6 +140,39 @@ static inline void tests_p_space()
 	assert(r.first == true);
 }
 
+static inline void tests_p_not()
+{
+	std::string str1("");
+	std::string str2("OK");
+
+	std::pair<bool, std::string> r;
+	{
+		p_not<p_eol> t;
+		r = t(str1);
+		assert(r.first == false);
+		r = t(str2);
+		assert(r.first == true);
+	}
+	{
+		p_eol t;
+		r = t(str1);
+		assert(r.first == true);
+		r = t(str2);
+		assert(r.first == false);
+	}
+	{
+		p_mul<p_not<p_eol>> t;
+		r = t(str1);
+		assert(r.first == true);
+		assert(r.second == "");
+		r = t(str2);
+		assert(r.first == true);
+		std::cout << r.second << std::endl;
+		assert(r.second == "OK");
+
+	}
+}
+
 int main()
 {
 	tests_p_char();
@@ -148,4 +181,5 @@ int main()
 	tests_p_mul();
 	tests_p_more();
 	tests_p_space();
+	tests_p_not();
 }

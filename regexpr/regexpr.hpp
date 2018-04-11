@@ -7,9 +7,6 @@
 
 #pragma once
 
-#include <utility>
-#include <functional>
-#include <string>
 #include <sstream>
 #include <iostream>
 
@@ -18,6 +15,7 @@ template<typename T> struct p_more;
 template<typename T> struct p_mul;
 template<typename ...T> struct p_or;
 template<typename ...T> struct p_then;
+template<typename T, typename U> struct p_end;
 template<char ...c> struct p_char;
 template<bool (*T)(std::string const &)> struct p_apply;
 template<typename T> struct p_not;
@@ -108,6 +106,28 @@ struct p_then<T, U>
 template<typename T, typename ...other>
 struct p_then<T, other...> : public p_then<T, p_then<other...>> {};
 
+/* P_END */
+template<typename T, typename U>
+struct p_end
+{
+	std::pair<bool, std::string> operator()(std::string str, std::stringstream *sstr = nullptr)
+	{
+		p_mul<U> mul;
+
+		std::cout << "start mul" << std::endl;
+		auto mp = mul(str);
+		std::cout << "end mul" << std::endl;
+		T t;
+		std::cout << "start t" << std::endl;
+		auto tp = t(mp.second, sstr);
+		std::cout << "end t" << std::endl;
+		if (tp.first == true) {
+			return std::make_pair(true, mp.second);
+		}
+		return std::make_pair(false, str);
+	}
+};
+
 /* P_CHAR */
 template<char c>
 struct p_char<c>
@@ -128,14 +148,26 @@ template<char c, char ...other>
 struct p_char<c, other...> : public p_or<p_char<c>, p_char<other...>> {};
 
 /* P_NOT */
+/* NOT VALID */
 template<typename T>
 struct p_not
 {
 	std::pair<bool, std::string> operator()(std::string str, std::stringstream *sstr = nullptr)
 	{
+		std::cout << "ENTER" << std::endl;
+		if (str.empty() == true) {
+			return std::make_pair(false, str);
+		}
+
 		T t;
 		auto tp = t(str);
-		return std::make_pair(!tp.first, tp.second);
+		std::cout << tp.first << "   " << tp.second << std::endl;
+		if (tp.first == false) {
+			if (sstr != nullptr) {
+				sstr << tp.second.at(0);
+			}
+		}
+		return std::make_pair(!tp.first, tp.second.substr(1));
 	}
 };
 
@@ -158,7 +190,7 @@ struct p_eol
 {
 	std::pair<bool, std::string> operator()(std::string str, std::stringstream *sstr = nullptr)
 	{
-		p_or<p_char<'\0', '\n'>, p_eof> eol;
+		p_or<p_eof, p_char<'\0', '\n'>> eol;
 
 		(void) sstr;
 		return eol(str);

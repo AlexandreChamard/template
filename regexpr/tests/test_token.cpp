@@ -9,13 +9,20 @@
 #include <queue>
 #include "../regexpr.hpp"
 
-bool is_digit(std::string const &str)
+int main(int ac, char **av)
 {
-	p_digit digit;
+	if (ac != 2) return (1);
+	p_token<p_end<p_char<'\0'>, p_or<p_not<p_char<':'>>, p_not<p_eof>>>, p_eof> token;
 
-	return digit(str).first;
+	std::string str = av[1];
+	auto r = token(str);
+
+	std::cout << "end: " << r.first << std::endl;
+	std::cout << "token: [" << r.second << "]" << std::endl;
+	return 0;
 }
 
+/*
 int main(int ac, char **av)
 {
 	if (ac != 2) return (1);
@@ -29,3 +36,4 @@ int main(int ac, char **av)
 	};
 	return 0;
 }
+*/
